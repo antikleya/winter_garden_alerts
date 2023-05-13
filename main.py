@@ -49,7 +49,7 @@ class AlertHandler:
 
     def get_last_datapoint_date(self) -> datetime:
         snapshot = self.db_reference.order_by_child('timestamp').limit_to_last(1).get()
-        date = datetime.fromtimestamp(list(snapshot.values())[0]['timestamp'] - 10800)
+        date = datetime.fromtimestamp(list(snapshot.values())[0]['timestamp'] - 10800, tz=self.tz)
         self.datapoint = list(snapshot.values())[0]
         return date
 
@@ -123,9 +123,9 @@ if __name__ == '__main__':
     initialize_app(credential=credential, options=db_config)
     ref = db.reference('/Log/')
     logging.basicConfig(filename='logs/log.txt', encoding='utf-8', level=logging.INFO)
-    tz = pytz.timezone(os.environ['TZ'])
+    # tz = pytz.timezone(os.environ['TZ'])
     alert_handler = AlertHandler(token=bot_config['token'], channel=bot_config['channel'],
-                                 db_reference=ref, time_interval=40, timer_delay=1, tz=tz)
+                                 db_reference=ref, time_interval=40, timer_delay=1)
     # alert_handler = AlertHandler(token=bot_config['token'], channel=bot_config['test_channel'],
     #                              db_reference=ref, time_interval=2, timer_delay=0.5, tz=tz)
     alert_handler.start()
