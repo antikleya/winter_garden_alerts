@@ -16,6 +16,16 @@ class RepeatTimer(Timer):
             self.function(*self.args, **self.kwargs)
 
 
+class Alert:
+    def __init__(self, log_str: str, bot: telegram.Bot):
+        self.log_tag = log_str
+        self.alert_flag = False
+        self.bot = bot
+
+
+
+
+
 class AlertHandler:
     def __init__(self, token: str, channel: str, db_reference, time_interval: int = 40, timer_delay: float = 5,
                  tz = pytz.timezone('Europe/Moscow')):
@@ -83,6 +93,7 @@ class AlertHandler:
 
         no_data_result = self.no_data_alert_handler(last_datapoint_time)
         reboot_alert = self.reboot_alert_handler()
+        self.clear_garbage_datapoints()
 
         logging.info(self.get_log_message(
             no_data_result['diff_in_minutes'],
@@ -101,6 +112,13 @@ class AlertHandler:
         except:
             timer.cancel()
 
+    def clear_garbage_datapoints(self):
+        print(self.datapoint['timestamp'])
+        if self.datapoint['timestamp'] > datetime.now(tz=self.tz).timestamp() + 3600:
+            self.db_reference.child(list(self.db_reference.order_by_child('timestamp').limit_to_last(1).get())[0])\
+                .delete()
+            self.get_last_datapoint_date()
+
 
 if __name__ == '__main__':
     credential = credentials.Certificate('wintergarden-ff60f-271493670cf3.json')
@@ -108,8 +126,8 @@ if __name__ == '__main__':
     ref = db.reference('/Log/')
     logging.basicConfig(filename='logs/log.txt', encoding='utf-8', level=logging.INFO)
     tz = pytz.timezone(os.environ['TZ'])
+    alert_handler = AlertHandler(token=bot_config['token'], channel=bot_config['channel'],
+                                 db_reference=ref, time_interval=40, timer_delay=1, tz=tz)
     # alert_handler = AlertHandler(token=bot_config['token'], channel=bot_config['test_channel'],
     #                              db_reference=ref, time_interval=2, timer_delay=0.5, tz=tz)
-    alert_handler = AlertHandler(token=bot_config['token'], channel=bot_config['channel'],
-                                 db_reference=ref, time_interval=40, timer_delay=3, tz=tz)
     alert_handler.start()
