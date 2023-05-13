@@ -49,7 +49,7 @@ class AlertHandler:
 
     def get_last_datapoint_date(self) -> datetime:
         snapshot = self.db_reference.order_by_child('timestamp').limit_to_last(1).get()
-        date = datetime.fromtimestamp(list(snapshot.values())[0]['timestamp'] - 10800, tz=self.tz)
+        date = datetime.fromtimestamp(list(snapshot.values())[0]['timestamp'] - 10800)
         self.datapoint = list(snapshot.values())[0]
         return date
 
@@ -113,11 +113,9 @@ class AlertHandler:
             timer.cancel()
 
     def clear_garbage_datapoints(self):
-        print(self.datapoint['timestamp'])
-        if self.datapoint['timestamp'] > datetime.now(tz=self.tz).timestamp() + 3600:
+        if self.datapoint['timestamp'] - 10800 > datetime.now(tz=self.tz).timestamp() + 3600:
             self.db_reference.child(list(self.db_reference.order_by_child('timestamp').limit_to_last(1).get())[0])\
                 .delete()
-            self.get_last_datapoint_date()
 
 
 if __name__ == '__main__':
